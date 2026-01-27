@@ -1,0 +1,33 @@
+
+import React from 'react';
+import { Expense } from '../types';
+import { CATEGORY_ICONS } from '../constants';
+
+interface ExpenseCardProps {
+  expense: Expense;
+}
+
+const ExpenseCard: React.FC<ExpenseCardProps> = ({ expense }) => {
+  return (
+    <div className="flex items-center justify-between p-4 bg-[#050505] neon-border rounded-xl hover:bg-[#080808] transition-all group">
+      <div className="flex items-center gap-4">
+        <div className="w-10 h-10 rounded-lg bg-black border border-white/5 flex items-center justify-center text-[#00FF7F] group-hover:scale-110 transition-transform">
+          {CATEGORY_ICONS[expense.category]}
+        </div>
+        <div>
+          <h4 className="font-semibold text-sm">{expense.description}</h4>
+          <span className="text-[10px] text-gray-500 uppercase tracking-widest">
+            {new Date(expense.date).toLocaleDateString('pt-AO', { day: '2-digit', month: 'short' })} • {expense.category}
+          </span>
+        </div>
+      </div>
+      <div className="text-right">
+        <div className="font-bold text-[#00FF7F]">
+          -{expense.amount.toLocaleString('pt-AO')} <span className="text-[10px] font-normal opacity-70">Kz</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ExpenseCard;
