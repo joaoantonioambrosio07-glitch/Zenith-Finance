@@ -1,156 +1,163 @@
 
-import React, { useState } from 'react';
-import { Plus, ChevronRight, ArrowUpRight, TrendingDown, Edit2, X, Check } from 'lucide-react';
-import { Expense } from '../types';
-import ExpenseCard from './ExpenseCard';
+import React, { useState, useMemo } from 'react';
+import { TrendingUp, TrendingDown, Target, Info, BellOff } from 'lucide-react';
+import { Transaction, Goal } from '../types';
+import TransactionCard from './TransactionCard';
 import ExpenseCharts from './ExpenseCharts';
 
 interface DashboardViewProps {
-  expenses: Expense[];
+  transactions: Transaction[];
   balance: number;
-  monthlySpending: number;
-  totalSpending: number;
-  onAddClick: () => void;
-  onUpdateBalance: (newBalance: number) => void;
+  initialBalance: number;
+  totals: { income: number; expense: number };
+  goals: Goal[];
+  onUpdateBalance: (val: number) => void;
+  onAction: () => void;
 }
 
 const DashboardView: React.FC<DashboardViewProps> = ({ 
-  expenses, 
-  balance, 
-  monthlySpending,
-  totalSpending,
-  onAddClick,
-  onUpdateBalance
+  transactions, balance, initialBalance, totals, goals, onUpdateBalance, onAction 
 }) => {
-  const [isEditingBalance, setIsEditingBalance] = useState(false);
-  const [tempBalance, setTempBalance] = useState(balance.toString());
-  
-  const latestExpenses = expenses.slice(0, 5);
-  // O saldo atual é o que sobra após TODOS os gastos registados
-  const currentNetBalance = balance - totalSpending;
-
-  const handleBalanceUpdate = () => {
-    const val = parseFloat(tempBalance);
-    if (!isNaN(val)) {
-      onUpdateBalance(val);
-      setIsEditingBalance(false);
+  const insights = useMemo(() => {
+    const list = [];
+    if (totals.expense > totals.income && totals.income > 0) {
+      list.push("As suas saídas superaram as entradas este mês. Reavalie despesas não essenciais.");
+    } else if (totals.income > 0) {
+      list.push("Bom trabalho! Está a manter um saldo positivo entre ganhos e gastos.");
     }
-  };
+    const nearGoal = goals.find(g => (g.currentAmount / g.targetAmount) > 0.8 && g.currentAmount < g.targetAmount);
+    if (nearGoal) {
+      list.push(`Está quase lá! Faltam apenas ${(nearGoal.targetAmount - nearGoal.currentAmount).toLocaleString()} Kz para atingir a meta: ${nearGoal.title}.`);
+    }
+    return list;
+  }, [totals, goals]);
+
+  // Check if notification permission is denied to show a small nudge
+  const [notifNudge] = useState(Notification.permission === 'default');
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Seção de Saldo Principal */}
-      <section className="text-center py-8 relative">
-        <h2 className="text-sm font-medium text-gray-400 uppercase tracking-[0.2em] mb-2">Saldo Disponível</h2>
-        
-        <div className="flex items-center justify-center gap-3">
-          <div className="text-5xl md:text-7xl font-extrabold text-[#00FF7F] neon-text tracking-tighter">
-            {currentNetBalance.toLocaleString('pt-AO')} <span className="text-2xl font-light">Kz</span>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
+      {/* Balanço Profissional */}
+      <section className="bg-gradient-to-br from-[#0f172a] to-black p-8 rounded-[2rem] border border-white/5 relative overflow-hidden">
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div>
+            <h2 className="text-xs font-bold text-gray-500 uppercase tracking-[0.2em] mb-2">Capital Disponível</h2>
+            <div className="text-4xl md:text-6xl font-black tracking-tight flex items-baseline gap-2">
+              {balance.toLocaleString('pt-AO')} <span className="text-xl font-medium text-gray-500">Kz</span>
+            </div>
+          </div>
+          <div className="flex flex-col items-end">
+            <button 
+              onClick={onAction}
+              className="bg-[#10b981] hover:bg-[#059669] text-white px-6 py-3 rounded-xl font-bold text-sm tracking-wide transition-colors flex items-center gap-2"
+            >
+              NOVO REGISTO
+            </button>
           </div>
         </div>
-        
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-8">
+
+        <div className="grid grid-cols-2 gap-4 mt-10 pt-8 border-t border-white/5">
           <div className="flex flex-col">
-            <span className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Gasto no Mês</span>
-            <span className="text-lg font-bold flex items-center gap-1 justify-center">
-              <TrendingDown size={14} className="text-[#00FF7F]" />
-              {monthlySpending.toLocaleString('pt-AO')} Kz
+            <span className="text-[10px] text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-1">
+              <TrendingUp size={10} className="text-[#10b981]" /> Entradas
             </span>
+            <span className="text-xl font-bold">{totals.income.toLocaleString()} Kz</span>
           </div>
-          
-          <div className="w-px h-10 bg-white/10 hidden sm:block"></div>
-          
-          <div className="flex flex-col items-center">
-            <span className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Fundo Inicial</span>
-            {isEditingBalance ? (
-              <div className="flex items-center gap-2 animate-in zoom-in duration-200">
-                <input 
-                  type="number"
-                  value={tempBalance}
-                  onChange={(e) => setTempBalance(e.target.value)}
-                  className="bg-black border-b border-[#00FF7F] text-lg font-bold text-[#00FF7F] text-center w-24 focus:outline-none"
-                  autoFocus
-                />
-                <button onClick={handleBalanceUpdate} className="text-[#00FF7F] hover:scale-110"><Check size={16}/></button>
-                <button onClick={() => setIsEditingBalance(false)} className="text-red-500 hover:scale-110"><X size={16}/></button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 group/edit cursor-pointer" onClick={() => setIsEditingBalance(true)}>
-                <span className="text-lg font-bold text-white group-hover/edit:text-[#00FF7F] transition-colors">
-                  {balance.toLocaleString('pt-AO')} Kz
-                </span>
-                <Edit2 size={12} className="text-gray-600 group-hover/edit:text-[#00FF7F]" />
-              </div>
-            )}
+          <div className="flex flex-col border-l border-white/5 pl-6">
+            <span className="text-[10px] text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-1">
+              <TrendingDown size={10} className="text-red-400" /> Saídas
+            </span>
+            <span className="text-xl font-bold">{totals.expense.toLocaleString()} Kz</span>
           </div>
         </div>
       </section>
 
-      {/* Botão de Ação */}
-      <div className="flex justify-center">
-        <button 
-          onClick={onAddClick}
-          className="neon-button group bg-[#00FF7F] text-black px-10 py-5 rounded-full font-bold flex items-center gap-3 shadow-[0_0_25px_rgba(0,255,127,0.35)] hover:shadow-[0_0_35px_rgba(0,255,127,0.5)] transition-all"
-        >
-          <Plus size={22} strokeWidth={3} className="group-hover:rotate-180 transition-transform duration-500" />
-          REGISTAR DESPESA
-        </button>
+      {/* Insights e Notificações */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {insights.length > 0 && (
+          <section className="bg-[#111] border border-white/5 rounded-2xl p-4 flex gap-4 items-start h-full">
+            <div className="bg-[#10b981]/10 p-2 rounded-lg text-[#10b981]">
+              <Info size={20} />
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-gray-300 uppercase tracking-widest">Resumo de Analítica</p>
+              <p className="text-sm text-gray-400 leading-relaxed line-clamp-2">{insights[0]}</p>
+            </div>
+          </section>
+        )}
+
+        {notifNudge && (
+          <section className="bg-[#111] border border-white/5 rounded-2xl p-4 flex gap-4 items-center h-full animate-pulse">
+            <div className="bg-yellow-500/10 p-2 rounded-lg text-yellow-500">
+              <BellOff size={20} />
+            </div>
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-yellow-500 uppercase tracking-widest">Sistema de Alertas</p>
+              <p className="text-xs text-gray-500">Ative as notificações para manter o foco nas suas metas.</p>
+            </div>
+          </section>
+        )}
       </div>
 
-      {/* Gráficos */}
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-[#050505] neon-border rounded-3xl p-6 transition-all hover:border-[#00FF7F]/50">
-          <h3 className="text-[10px] font-bold tracking-[0.2em] mb-6 flex items-center gap-2 text-gray-400 uppercase">
-            <ArrowUpRight size={14} className="text-[#00FF7F]" />
-            Categorias
-          </h3>
-          <div className="h-[220px] w-full">
-            {expenses.length > 0 ? (
-              <ExpenseCharts expenses={expenses} type="pie" />
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-[10px] text-gray-700 uppercase tracking-widest gap-2">
-                <div className="w-12 h-12 rounded-full border border-white/5 animate-pulse"></div>
-                Sem dados para exibir
-              </div>
-            )}
+      {/* Metas Ativas */}
+      {goals.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex justify-between items-center px-2">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Metas Prioritárias</h3>
           </div>
-        </div>
-        <div className="bg-[#050505] neon-border rounded-3xl p-6 transition-all hover:border-[#00FF7F]/50">
-          <h3 className="text-[10px] font-bold tracking-[0.2em] mb-6 flex items-center gap-2 text-gray-400 uppercase">
-            <TrendingDown size={14} className="text-[#00FF7F]" />
-            Últimos 7 Dias
-          </h3>
-          <div className="h-[220px] w-full">
-            {expenses.length > 0 ? (
-              <ExpenseCharts expenses={expenses} type="bar" />
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-[10px] text-gray-700 uppercase tracking-widest gap-2">
-                <div className="w-12 h-12 rounded-full border border-white/5 animate-pulse"></div>
-                Aguardando registos
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {goals.slice(0, 2).map(goal => (
+              <div key={goal.id} className="bg-[#111] border border-white/5 p-5 rounded-2xl">
+                <div className="flex justify-between mb-4">
+                  <span className="font-bold text-sm">{goal.title}</span>
+                  <span className="text-xs text-[#10b981] font-bold">
+                    {Math.round((goal.currentAmount / goal.targetAmount) * 100)}%
+                  </span>
+                </div>
+                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-[#10b981] rounded-full transition-all duration-1000" 
+                    style={{ width: `${Math.min(100, (goal.currentAmount / goal.targetAmount) * 100)}%` }}
+                  ></div>
+                </div>
+                <div className="flex justify-between mt-3 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                  <span>{goal.currentAmount.toLocaleString()} Kz</span>
+                  <span>{goal.targetAmount.toLocaleString()} Kz</span>
+                </div>
               </div>
-            )}
+            ))}
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* Atividade */}
-      <section className="space-y-4">
-        <div className="flex justify-between items-center px-2">
-          <h3 className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-500">Fluxo Recente</h3>
+      {/* Histórico e Gráficos */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-4">
+          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-2">Fluxo de Caixa</h3>
+          <div className="space-y-2">
+            {transactions.length > 0 ? (
+              transactions.slice(0, 5).map(t => (
+                <TransactionCard key={t.id} transaction={t} />
+              ))
+            ) : (
+              <div className="py-12 text-center text-gray-700 text-xs font-bold uppercase tracking-[0.2em] border border-dashed border-white/5 rounded-2xl">
+                Aguardando primeiras movimentações
+              </div>
+            )}
+          </div>
         </div>
         
-        <div className="grid grid-cols-1 gap-3">
-          {latestExpenses.length > 0 ? (
-            latestExpenses.map((expense) => (
-              <ExpenseCard key={expense.id} expense={expense} />
-            ))
-          ) : (
-            <div className="text-center py-16 bg-[#030303] border border-dashed border-white/5 rounded-3xl group">
-              <p className="text-[10px] text-gray-700 uppercase tracking-[0.3em] group-hover:text-gray-500 transition-colors">
-                Tudo limpo por aqui. Comece agora!
-              </p>
-            </div>
-          )}
+        <div className="space-y-4">
+           <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-2">Alocação</h3>
+           <div className="bg-[#111] border border-white/5 p-6 rounded-3xl h-[300px]">
+              {transactions.length > 0 ? (
+                <ExpenseCharts expenses={transactions} type="pie" />
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-700 text-[10px] uppercase font-bold text-center">
+                  Gráfico Indisponível
+                </div>
+              )}
+           </div>
         </div>
       </section>
     </div>

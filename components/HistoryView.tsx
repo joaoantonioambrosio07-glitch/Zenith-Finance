@@ -1,90 +1,86 @@
 
 import React, { useState, useMemo } from 'react';
-import { Search, Trash2 } from 'lucide-react';
-import { Category, Expense } from '../types';
-import ExpenseCard from './ExpenseCard';
+import { Search, Trash2, Filter } from 'lucide-react';
+import { Category, Transaction } from '../types';
+import TransactionCard from './TransactionCard';
 
 interface HistoryViewProps {
-  expenses: Expense[];
+  transactions: Transaction[];
   onDelete: (id: string) => void;
 }
 
-const HistoryView: React.FC<HistoryViewProps> = ({ expenses, onDelete }) => {
+const HistoryView: React.FC<HistoryViewProps> = ({ transactions, onDelete }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<Category | 'todos'>('todos');
+  const [selectedType, setSelectedType] = useState<'all' | 'income' | 'expense'>('all');
 
-  const filteredExpenses = useMemo(() => {
-    return expenses.filter(e => {
-      const matchesSearch = e.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === 'todos' || e.category === selectedCategory;
-      return matchesSearch && matchesCategory;
+  const filtered = useMemo(() => {
+    return transactions.filter(t => {
+      const matchesSearch = t.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesType = selectedType === 'all' || t.type === selectedType;
+      return matchesSearch && matchesType;
     });
-  }, [expenses, searchTerm, selectedCategory]);
+  }, [transactions, searchTerm, selectedType]);
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-left duration-300">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold tracking-tighter uppercase">Arquivo Geral</h2>
-        <div className="px-3 py-1 rounded-full bg-[#00FF7F]/10 border border-[#00FF7F]/20 text-[#00FF7F]">
-           <span className="text-[10px] font-bold tracking-widest">{filteredExpenses.length} ITENS</span>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex justify-between items-end">
+        <div>
+          <h2 className="text-2xl font-black tracking-tight mb-1">Extrato Geral</h2>
+          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]">Histórico Completo de Movimentações</p>
+        </div>
+        <div className="text-right">
+          <span className="text-2xl font-black text-[#10b981]">{filtered.length}</span>
+          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Registos</p>
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-[#00FF7F] transition-colors" size={18} />
-          <input 
-            type="text"
-            placeholder="Filtrar por nome ou valor..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-[#050505] border border-white/5 rounded-2xl pl-12 pr-4 py-4 focus:outline-none focus:border-[#00FF7F] transition-all"
-          />
-        </div>
-
-        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-          <button 
-            onClick={() => setSelectedCategory('todos')}
-            className={`whitespace-nowrap px-5 py-2 rounded-xl text-[10px] font-bold tracking-widest border transition-all ${selectedCategory === 'todos' ? 'bg-[#00FF7F] border-[#00FF7F] text-black shadow-[0_0_10px_rgba(0,255,127,0.3)]' : 'bg-[#050505] border-white/5 text-gray-500 hover:border-white/20'}`}
-          >
-            TODOS
-          </button>
-          {Object.values(Category).map((cat) => (
-            <button 
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`whitespace-nowrap px-5 py-2 rounded-xl text-[10px] font-bold tracking-widest border transition-all ${selectedCategory === cat ? 'bg-[#00FF7F] border-[#00FF7F] text-black shadow-[0_0_10px_rgba(0,255,127,0.3)]' : 'bg-[#050505] border-white/5 text-gray-500 hover:border-white/20'}`}
-            >
-              {cat.toUpperCase()}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 pb-8">
-        {filteredExpenses.length > 0 ? (
-          filteredExpenses.map((expense) => (
-            <div key={expense.id} className="relative group">
-              <ExpenseCard expense={expense} />
-              <button 
-                onClick={() => onDelete(expense.id)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white"
-                title="Apagar"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          ))
-        ) : (
-          <div className="text-center py-24 text-gray-700">
-            <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 rounded-full border border-dashed border-gray-800 flex items-center justify-center">
-                 <Search size={24} className="opacity-20" />
-              </div>
-            </div>
-            <p className="uppercase tracking-[0.3em] text-[10px]">Sem correspondências</p>
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
+            <input 
+              type="text"
+              placeholder="Pesquisar transação..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-[#111] border border-white/5 rounded-2xl pl-12 pr-4 py-4 focus:outline-none focus:border-[#10b981] transition-all"
+            />
           </div>
-        )}
+          <div className="flex bg-[#111] p-1 rounded-2xl border border-white/5">
+            {(['all', 'income', 'expense'] as const).map(type => (
+              <button
+                key={type}
+                onClick={() => setSelectedType(type)}
+                className={`px-6 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${selectedType === type ? 'bg-white/5 text-white shadow-sm' : 'text-gray-600 hover:text-gray-400'}`}
+              >
+                {type === 'all' ? 'Tudo' : type === 'income' ? 'Entradas' : 'Saídas'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {filtered.length > 0 ? (
+            filtered.map(t => (
+              <div key={t.id} className="relative group">
+                <TransactionCard transaction={t} />
+                <button 
+                  onClick={() => onDelete(t.id)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))
+          ) : (
+            <div className="py-24 text-center space-y-4">
+              <div className="inline-flex p-6 bg-[#111] rounded-full border border-white/5 text-gray-800">
+                <Filter size={32} />
+              </div>
+              <p className="text-gray-600 text-xs font-bold uppercase tracking-[0.4em]">Sem resultados para o filtro</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
